@@ -4,14 +4,13 @@
       id="myCanvas"
       width="300"
       height="200"
-      style="border: 1px solid #000;"
+      style="border:1px solid black"
     ></canvas>
 
     <script>
       const canvas = document.getElementById("myCanvas");
       const ctx = canvas.getContext("2d");
 
-      // Stella
       ctx.beginPath();
       ctx.moveTo(150, 20);
       ctx.lineTo(197, 164);
@@ -19,11 +18,12 @@
       ctx.lineTo(226, 76);
       ctx.lineTo(103, 164);
       ctx.closePath();
-      ctx.stroke();
 
-      // Cerchio
-      ctx.beginPath();
-      ctx.arc(150, 100, 80, 0, 2 * Math.PI);
+      ctx.fillStyle = "yellow";
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 3;
+
+      ctx.fill();
       ctx.stroke();
     </script>
   </body>
