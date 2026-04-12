@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketHub — Compra & Vendi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f2eb;
+    --cream: #ece8de;
+    --accent: #e84b25;
+    --accent2: #2563eb;
+    --gold: #c9a84c;
+    --muted: #7a7367;
+    --card-bg: #ffffff;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+  /* ─── HEADER ─── */
+  header {
+    background: var(--ink);
+    color: white;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .logo span { color: var(--accent); }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .cart-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.15s, background 0.2s;
+  }
+  .cart-btn:hover { transform: scale(1.05); background: #c73d1c; }
+  .cart-count {
+    background: white;
+    color: var(--accent);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  /* ─── HERO / UPLOAD ─── */
+  .hero {
+    background: linear-gradient(135deg, var(--ink) 0%, #1a1a2e 100%);
+    color: white;
+    padding: 60px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 70% 30%, rgba(232,75,37,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(37,99,235,0.1) 0%, transparent 40%);
+  }
+  .hero-content { position: relative; z-index: 1; }
+  .hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; margin-bottom: 12px; }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p { color: rgba(255,255,255,0.65); font-size: 1.1rem; margin-bottom: 36px; }
+  .upload-zone {
+    background: rgba(255,255,255,0.08);
+    border: 2px dashed rgba(255,255,255,0.25);
+    border-radius: 20px;
+    padding: 36px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.25s;
+    max-width: 480px;
+    width: 100%;
+  }
+  .upload-zone:hover { background: rgba(255,255,255,0.13); border-color: var(--accent); }
+  .upload-icon { font-size: 2.5rem; }
+  .upload-zone p { color: rgba(255,255,255,0.8); font-size: 0.95rem; }
+  .upload-zone strong { color: var(--accent); }
+  #csvInput { display: none; }
+  .upload-label {
+    background: var(--accent);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .upload-label:hover { transform: scale(1.04); }
+
+  /* ─── FILTERS ─── */
+  .filters {
+    padding: 24px 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--cream);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    align-items: center;
+  }
+  .filter-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--muted); margin-right: 4px; }
+  .filter-btn {
+    background: white;
+    border: 2px solid transparent;
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* ─── PRODUCTS GRID ─── */
+  .products-section { padding: 40px 32px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 28px; display: flex; align-items: center; gap: 10px; }
+  .section-title::after { content: ''; flex: 1; height: 2px; background: var(--cream); }
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .product-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+  .product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(0,0,0,0.14); }
+  .product-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    background: var(--cream);
+  }
+  .product-img-placeholder {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    background: var(--cream);
+  }
+  .product-body { padding: 20px; }
+  .product-cat {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-family: 'Syne', sans-serif;
+  }
+  .product-name { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
+  .product-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.55; margin-bottom: 14px; }
+  .product-specs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .spec-tag {
+    background: var(--cream);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    color: var(--ink);
+  }
+  .spec-tag strong { color: var(--muted); font-weight: 500; }
+  .product-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--cream); }
+  .product-price { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--ink); }
+  .product-price small { font-size: 0.75rem; font-weight: 400; color: var(--muted); }
+  .add-cart-btn {
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .add-cart-btn:hover { background: var(--accent); transform: scale(1.05); }
+  .empty-state { text-align: center; padding: 80px 40px; color: var(--muted); }
+  .empty-state .big-icon { font-size: 4rem; margin-bottom: 16px; }
+  .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 1.3rem; margin-bottom: 8px; color: var(--ink); }
+
+  /* ─── MODAL BASE ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: white;
+    border-radius: 24px;
+    padding: 40px;
+    width: 90%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.92);
+    transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+  .modal-header h2 { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; }
+  .close-btn { background: var(--cream); border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+  .close-btn:hover { background: #ddd; }
+
+  /* ─── CART MODAL ─── */
+  .cart-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--cream); align-items: center; }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+  .cart-item-price { color: var(--accent); font-weight: 700; font-size: 1rem; }
+  .cart-item-cat { font-size: 0.75rem; color: var(--muted); }
+  .cart-remove { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 6px; transition: color 0.2s; }
+  .cart-remove:hover { color: var(--accent); }
+  .cart-total { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; text-align: right; padding-top: 16px; }
+  .checkout-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.2s;
+  }
+  .checkout-btn:hover { background: #c73d1c; }
+
+  /* ─── REGISTRATION MODAL ─── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select {
+    border: 2px solid var(--cream);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    background: white;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group input.error { border-color: #e53e3e; }
+  .submit-reg-btn {
+    width: 100%;
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.2s;
+  }
+  .submit-reg-btn:hover { background: var(--accent2); }
+
+  /* ─── SUCCESS MODAL ─── */
+  .success-content { text-align: center; padding: 20px 0; }
+  .success-icon { font-size: 4rem; margin-bottom: 16px; animation: pop 0.5s cubic-bezier(.36,1.6,.6,1); }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .success-content h3 { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; margin-bottom: 10px; }
+  .success-content p { color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+  .pdf-btn {
+    background: var(--accent2);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pdf-btn:hover { background: #1d4ed8; }
+  .order-summary { background: var(--cream); border-radius: 14px; padding: 18px; margin-bottom: 20px; text-align: left; }
+  .order-summary h4 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 10px; }
+  .order-item { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0; }
+  .order-total-line { display: flex; justify-content: space-between; font-weight: 700; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); margin-top: 6px; }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(.36,1.6,.6,1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ─── CATEGORY EMOJI ─── */
+  .cat-libro { color: #2563eb; }
+  .cat-smartphone { color: #7c3aed; }
+  .cat-auto { color: #059669; }
+  .cat-moto { color: #d97706; }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .products-section { padding: 24px 16px; }
+    .hero { padding: 40px 20px; }
+    .filters { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Market<span>Hub</span></div>
+  <div class="header-actions">
+    <button class="cart-btn" onclick="openCart()">
+      🛒 Carrello <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- HERO + UPLOAD -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Il tuo <em>Marketplace</em><br>su misura</h1>
+    <p>Carica il tuo catalogo CSV e inizia a vendere in pochi secondi</p>
+    <div class="upload-zone" onclick="document.getElementById('csvInput').click()">
+      <div class="upload-icon">📂</div>
+      <p>Trascina qui il tuo file CSV o<br><strong>clicca per selezionarlo</strong></p>
+      <p style="font-size:0.8rem; color:rgba(255,255,255,0.4)">File di esempio incluso → prodotti.csv</p>
+      <label class="upload-label" onclick="event.stopPropagation(); document.getElementById('csvInput').click()">Scegli file CSV</label>
+    </div>
+    <input type="file" id="csvInput" accept=".csv" onchange="handleCSV(event)">
+  </div>
+</section>
+
+<!-- FILTERS -->
+<div class="filters" id="filtersBar" style="display:none">
+  <span class="filter-label">Filtra:</span>
+  <button class="filter-btn active" onclick="filterProducts('tutti', this)">Tutti</button>
+  <div id="categoryFilters"></div>
+</div>
+
+<!-- PRODUCTS -->
+<section class="products-section">
+  <div id="sectionTitle" style="display:none" class="section-title">🏪 Catalogo Prodotti</div>
+  <div class="products-grid" id="productsGrid">
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="big-icon">📋</div>
+      <h3>Nessun prodotto ancora</h3>
+      <p>Carica un file CSV per visualizzare i prodotti</p>
+    </div>
+  </div>
+</section>
+
+<!-- CART MODAL -->
+<div class="modal-overlay" id="cartModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🛒 Il tuo Carrello</h2>
+      <button class="close-btn" onclick="closeModal('cartModal')">✕</button>
+    </div>
+    <div id="cartItems"></div>
+    <div class="cart-total" id="cartTotal"></div>
+    <button class="checkout-btn" onclick="goToCheckout()">Procedi all'acquisto →</button>
+  </div>
+</div>
+
+<!-- REGISTRATION MODAL -->
+<div class="modal-overlay" id="regModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>👤 Dati Acquirente</h2>
+      <button class="close-btn" onclick="closeModal('regModal')">✕</button>
+    </div>
+    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px">Compila l'anagrafica per completare l'acquisto</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome *</label>
+        <input type="text" id="fNome" placeholder="Mario">
+      </div>
+      <div class="form-group">
+        <label>Cognome *</label>
+        <input type="text" id="fCognome" placeholder="Rossi">
+      </div>
+      <div class="form-group full">
+        <label>Email *</label>
+        <input type="email" id="fEmail" placeholder="mario@esempio.it">
+      </div>
+      <div class="form-group">
+        <label>Telefono</label>
+        <input type="tel" id="fTel" placeholder="+39 000 0000000">
+      </div>
+      <div class="form-group">
+        <label>Codice Fiscale</label>
+        <input type="text" id="fCF" placeholder="RSSMRA80A01H501T">
+      </div>
+      <div class="form-group full">
+        <label>Indirizzo *</label>
+        <input type="text" id="fIndirizzo" placeholder="Via Roma 1">
+      </div>
+      <div class="form-group">
+        <label>Città *</label>
+        <input type="text" id="fCitta" placeholder="Genova">
+      </div>
+      <div class="form-group">
+        <label>CAP *</label>
+        <input type="text" id="fCap" placeholder="16100">
+      </div>
+      <div class="form-group full">
+        <label>Metodo di pagamento</label>
+        <select id="fPagamento">
+          <option value="carta">💳 Carta di credito/debito</option>
+          <option value="paypal">🅿️ PayPal</option>
+          <option value="bonifico">🏦 Bonifico bancario</option>
+          <option value="contanti">💵 Contanti alla consegna</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-reg-btn" onclick="submitOrder()">✅ Conferma Ordine</button>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Ordine Confermato!</h2>
+      <button class="close-btn" onclick="closeModal('successModal')">✕</button>
+    </div>
+    <div class="success-content">
+      <div class="success-icon">🎉</div>
+      <h3>Grazie per il tuo ordine!</h3>
+      <p id="successMsg"></p>
+      <div class="order-summary" id="orderSummary"></div>
+      <button class="pdf-btn" onclick="generatePDF()">
+        📄 Scarica Ricevuta PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  STATO APPLICAZIONE
+// ══════════════════════════════════════
+let allProducts = [];
+let cart = [];
+let currentUser = null;
+let activeFilter = 'tutti';
+
+// ══════════════════════════════════════
+//  PARSING CSV
+// ══════════════════════════════════════
+function handleCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    allProducts = parseCSV(text);
+    renderFilters();
+    renderProducts(allProducts);
+    document.getElementById('filtersBar').style.display = 'flex';
+    document.getElementById('sectionTitle').style.display = 'flex';
+    showToast('✅ ' + allProducts.length + ' prodotti caricati con successo!');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  const products = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const values = lines[i].split(',').map(v => v.trim());
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h] = values[idx] || ''; });
+    products.push(obj);
+  }
+  return products;
+}
+
+// ══════════════════════════════════════
+//  RENDER PRODOTTI
+// ══════════════════════════════════════
+const catEmoji = { libro: '📚', smartphone: '📱', auto: '🚗', moto: '🏍️' };
+const catDelay = { 0:'0.05s', 1:'0.1s', 2:'0.15s', 3:'0.2s', 4:'0.25s', 5:'0.3s' };
+
+function renderProducts(products) {
+  const grid = document.getElementById('productsGrid');
+  if (products.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="big-icon">🔍</div>
+      <h3>Nessun prodotto trovato</h3>
+      <p>Prova un'altra categoria</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = products.map((p, i) => buildCard(p, i)).join('');
+}
+
+function buildCard(p, i) {
+  const cat = (p.categoria || '').toLowerCase();
+  const emoji = catEmoji[cat] || '📦';
+  const delay = catDelay[i % 6] || '0s';
+  const prezzo = parseFloat(p.prezzo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 });
+
+  // Specs dinamiche
+  let specsHTML = '';
+  for (let n = 1; n <= 4; n++) {
+    const nome = p[`campo${n}_nome`];
+    const val = p[`campo${n}_valore`];
+    if (nome && val) {
+      specsHTML += `<span class="spec-tag"><strong>${nome}:</strong> ${val}</span>`;
+    }
+  }
+
+  // Immagine o placeholder
+  let imgHTML = '';
+  if (p.immagine_url) {
+    imgHTML = `<img class="product-img" src="${p.immagine_url}" alt="${p.titolo}" onerror="this.outerHTML='<div class=\\'product-img-placeholder\\'>${emoji}</div>'">`;
+  } else {
+    imgHTML = `<div class="product-img-placeholder">${emoji}</div>`;
+  }
+
+  const productId = btoa(p.titolo + p.prezzo).replace(/[^a-zA-Z0-9]/g, '').substring(0,12);
+
+  return `<div class="product-card" style="animation-delay:${delay}" data-id="${productId}">
+    ${imgHTML}
+    <div class="product-body">
+      <div class="product-cat cat-${cat}">${emoji} ${p.categoria || 'Prodotto'}</div>
+      <div class="product-name">${p.titolo || 'Prodotto'}</div>
+      ${p.marca ? `<div style="font-size:0.82rem;color:var(--muted);margin-bottom:8px">${p.marca}${p.modello ? ' · ' + p.modello : ''}</div>` : ''}
+      <div class="product-desc">${p.descrizione || ''}</div>
+      <div class="product-specs">${specsHTML}</div>
+      <div class="product-footer">
+        <div class="product-price">€${prezzo} <small>IVA incl.</small></div>
+        <button class="add-cart-btn" onclick="addToCart(${JSON.stringify(p).split('"').join('&quot;')})">
+          🛒 Aggiungi
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+//  FILTRI CATEGORIA
+// ══════════════════════════════════════
+function renderFilters() {
+  const cats = [...new Set(allProducts.map(p => p.categoria).filter(Boolean))];
+  const container = document.getElementById('categoryFilters');
+  container.innerHTML = cats.map(c => {
+    const em = catEmoji[c.toLowerCase()] || '📦';
+    return `<button class="filter-btn" onclick="filterProducts('${c}', this)">${em} ${c}</button>`;
+  }).join('');
+}
+
+function filterProducts(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = cat;
+  const filtered = cat === 'tutti' ? allProducts : allProducts.filter(p => p.categoria === cat);
+  renderProducts(filtered);
+}
+
+// ══════════════════════════════════════
+//  CARRELLO
+// ══════════════════════════════════════
+function addToCart(product) {
+  cart.push(product);
+  updateCartCount();
+  showToast(`✅ "${product.titolo}" aggiunto al carrello`);
+}
+
+function updateCartCount() {
+  document.getElementById('cartCount').textContent = cart.length;
+}
+
+function openCart() {
+  renderCartItems();
+  openModal('cartModal');
+}
+
+function renderCartItems() {
+  const container = document.getElementById('cartItems');
+  const totalEl = document.getElementById('cartTotal');
+  if (cart.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">
+      <div style="font-size:3rem;margin-bottom:12px">🛒</div>
+      <p>Il carrello è vuoto</p>
+    </div>`;
+    totalEl.innerHTML = '';
+    return;
+  }
+  const cat = cat => catEmoji[(cat||'').toLowerCase()] || '📦';
+  container.innerHTML = cart.map((p, i) => `
+    <div class="cart-item">
+      <div style="font-size:2rem">${cat(p.categoria)}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${p.titolo}</div>
+        <div class="cart-item-cat">${p.categoria}</div>
+        <div class="cart-item-price">€${parseFloat(p.prezzo||0).toLocaleString('it-IT',{minimumFractionDigits:2})}</div>
+      </div>
+      <button class="cart-remove" onclick="removeFromCart(${i})">🗑️</button>
+    </div>`).join('');
+  const total = cart.reduce((s, p) => s + parseFloat(p.prezzo || 0), 0);
+  totalEl.innerHTML = `Totale: <span style="color:var(--accent)">€${total.toLocaleString('it-IT',{minimumFractionDigits:2})}</span>`;
+}
+
+function removeFromCart(i) {
+  const name = cart[i].titolo;
+  cart.splice(i, 1);
+  updateCartCount();
+  renderCartItems();
+  showToast(`🗑️ "${name}" rimosso`);
+}
+
+// ══════════════════════════════════════
+//  CHECKOUT & ANAGRAFICA
+// ══════════════════════════════════════
+function goToCheckout() {
+  if (cart.length === 0) { showToast('⚠️ Il carrello è vuoto!'); return; }
+  closeModal('cartModal');
+  setTimeout(() => openModal('regModal'), 200);
+}
+
+function submitOrder() {
+  const required = ['fNome','fCognome','fEmail','fIndirizzo','fCitta','fCap'];
+  let valid = true;
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) { el.classList.add('error'); valid = false; }
+    else el.classList.remove('error');
+  });
+  if (!valid) { showToast('⚠️ Compila tutti i campi obbligatori'); return; }
+
+  currentUser = {
+    nome: document.getElementById('fNome').value,
+    cognome: document.getElementById('fCognome').value,
+    email: document.getElementById('fEmail').value,
+    telefono: document.getElementById('fTel').value,
+    cf: document.getElementById('fCF').value,
+    indirizzo: document.getElementById('fIndirizzo').value,
+    citta: document.getElementById('fCitta').value,
+    cap: document.getElementById('fCap').value,
+    pagamento: document.getElementById('fPagamento').value,
+    dataOrdine: new Date().toLocaleString('it-IT')
+  };
+
+  closeModal('regModal');
+  setTimeout(() => showSuccess(), 200);
+}
+
+function showSuccess() {
+  document.getElementById('successMsg').textContent =
+    `Ciao ${currentUser.nome}, il tuo ordine è stato ricevuto! Ti contatteremo a ${currentUser.email}.`;
+
+  const total = cart.reduce((s,p) => s + parseFloat(p.prezzo||0), 0);
+  let summaryHTML = '<h4>📦 Riepilogo Ordine</h4>';
+  cart.forEach(p => {
+    summaryHTML += `<div class="order-item"><span>${p.titolo}</span><span>€${parseFloat(p.prezzo||0).toLocaleString('it-IT',{minimumFractionDigits:2})}</span></div>`;
+  });
+  summaryHTML += `<div class="order-total-line"><span>TOTALE</span><span>€${total.toLocaleString('it-IT',{minimumFractionDigits:2})}</span></div>`;
+  document.getElementById('orderSummary').innerHTML = summaryHTML;
+
+  openModal('successModal');
+}
+
+// ══════════════════════════════════════
+//  GENERAZIONE PDF (jsPDF)
+// ══════════════════════════════════════
+function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const total = cart.reduce((s,p) => s + parseFloat(p.prezzo||0), 0);
+
+  // Header colorato
+  doc.setFillColor(13, 13, 13);
+  doc.rect(0, 0, pageW, 30, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.text('MarketHub', 14, 18);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(180, 180, 180);
+  doc.text('Ricevuta di Acquisto', 14, 25);
+
+  // Numero ordine e data
+  const orderId = 'ORD-' + Date.now().toString().slice(-8);
+  doc.setTextColor(232, 75, 37);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(orderId, pageW - 14, 18, { align: 'right' });
+  doc.setTextColor(180, 180, 180);
+  doc.setFont('helvetica', 'normal');
+  doc.text(currentUser.dataOrdine, pageW - 14, 25, { align: 'right' });
+
+  let y = 44;
+
+  // Sezione acquirente
+  doc.setFillColor(245, 242, 235);
+  doc.roundedRect(10, y, pageW - 20, 40, 3, 3, 'F');
+  doc.setTextColor(13, 13, 13);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('DATI ACQUIRENTE', 16, y + 8);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`${currentUser.nome} ${currentUser.cognome}`, 16, y + 17);
+  doc.text(`Email: ${currentUser.email}`, 16, y + 24);
+  if (currentUser.telefono) doc.text(`Tel: ${currentUser.telefono}`, 16, y + 31);
+  doc.text(`Indirizzo: ${currentUser.indirizzo}, ${currentUser.cap} ${currentUser.citta}`, 80, y + 17);
+  if (currentUser.cf) doc.text(`C.F.: ${currentUser.cf}`, 80, y + 24);
+  const pagLabel = { carta:'Carta di credito', paypal:'PayPal', bonifico:'Bonifico bancario', contanti:'Contanti alla consegna' };
+  doc.text(`Pagamento: ${pagLabel[currentUser.pagamento] || currentUser.pagamento}`, 80, y + 31);
+  y += 50;
+
+  // Intestazione tabella prodotti
+  doc.setFillColor(232, 75, 37);
+  doc.rect(10, y, pageW - 20, 9, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('PRODOTTO', 15, y + 6);
+  doc.text('CATEGORIA', 100, y + 6);
+  doc.text('PREZZO', pageW - 20, y + 6, { align: 'right' });
+  y += 12;
+
+  // Righe prodotti
+  cart.forEach((p, i) => {
+    if (i % 2 === 0) {
+      doc.setFillColor(250, 250, 250);
+      doc.rect(10, y - 4, pageW - 20, 10, 'F');
+    }
+    doc.setTextColor(13, 13, 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const nome = p.titolo.length > 40 ? p.titolo.substring(0,40) + '...' : p.titolo;
+    doc.text(nome, 15, y + 2);
+    doc.text(p.categoria || '', 100, y + 2);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`€ ${parseFloat(p.prezzo||0).toLocaleString('it-IT',{minimumFractionDigits:2})}`, pageW - 20, y + 2, { align: 'right' });
+    y += 10;
+    if (y > 260) { doc.addPage(); y = 20; }
+  });
+
+  // Totale
+  y += 4;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(10, y, pageW - 10, y);
+  y += 8;
+  doc.setFillColor(13, 13, 13);
+  doc.roundedRect(pageW - 80, y - 6, 70, 14, 3, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(`TOTALE  € ${total.toLocaleString('it-IT',{minimumFractionDigits:2})}`, pageW - 18, y + 3, { align: 'right' });
+
+  // Footer
+  const footerY = doc.internal.pageSize.getHeight() - 14;
+  doc.setFillColor(13, 13, 13);
+  doc.rect(0, footerY - 4, pageW, 20, 'F');
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('MarketHub S.r.l. — Via del Commercio 1, 16100 Genova — info@markethub.it', pageW / 2, footerY + 4, { align: 'center' });
+  doc.text('Documento generato automaticamente — non richiede firma', pageW / 2, footerY + 9, { align: 'center' });
+
+  doc.save(`Ricevuta_${orderId}.pdf`);
+  showToast('📄 PDF generato con successo!');
+
+  // Reset carrello
+  cart = [];
+  updateCartCount();
+}
+
+// ══════════════════════════════════════
+//  UTILS MODAL & TOAST
+// ══════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', function(e) {
+    if (e.target === this) closeModal(this.id);
+  });
+});
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
