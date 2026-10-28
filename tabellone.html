@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anagrafica classe</title>
+</head>
+<body>
+
+<h1>Anagrafica della classe 5A</h1>
+
+<table border="1">
+    <tr>
+        <th>Nome</th>
+        <th>Cognome</th>
+        <th>Eta</th>
+        <th>Classe</th>
+    </tr>
+    <tbody id="risultato"></tbody>
+</table>
+
+<script>
+const xml = `
+<classe>
+    <studente>
+        <nome>Mario</nome>
+        <cognome>Rossi</cognome>
+        <eta>18</eta>
+        <classe>5A</classe>
+    </studente>
+    <studente>
+        <nome>Laura</nome>
+        <cognome>Bianchi</cognome>
+        <eta>19</eta>
+        <classe>5A</classe>
+    </studente>
+    <studente>
+        <nome>Luca</nome>
+        <cognome>Verdi</cognome>
+        <eta>18</eta>
+        <classe>5A</classe>
+    </studente>
+</classe>`;
+
+const datiXML = new DOMParser().parseFromString(xml, "text/xml");
+const studenti = datiXML.getElementsByTagName("studente");
+
+let tabella = "";
+
+for (let i = 0; i < studenti.length; i++) {
+    tabella += "<tr>";
+    tabella += "<td>" + studenti[i].getElementsByTagName("nome")[0].textContent + "</td>";
+    tabella += "<td>" + studenti[i].getElementsByTagName("cognome")[0].textContent + "</td>";
+    tabella += "<td>" + studenti[i].getElementsByTagName("eta")[0].textContent + "</td>";
+    tabella += "<td>" + studenti[i].getElementsByTagName("classe")[0].textContent + "</td>";
+    tabella += "</tr>";
+}
+
+document.getElementById("risultato").innerHTML = tabella;
+</script>
+
+</body>
+</html>
